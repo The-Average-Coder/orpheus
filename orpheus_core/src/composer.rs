@@ -1,6 +1,8 @@
-mod chromosome;
+pub mod chromosome;
 
-use crate::composer::chromosome::Chromosome;
+use rand::{rngs::ThreadRng, seq::IndexedRandom};
+
+use crate::composer::chromosome::{generate_random_chromosome, Chromosome};
 
 pub fn generate_chromosome_pool(initial_size: usize, melody_duration: u16) -> Vec::<Chromosome> {
 
@@ -28,6 +30,60 @@ pub fn mutate_chromosome_pool(chromosome_pool: &mut Vec::<Chromosome>, mutation_
         chromosome.mutate(mutation_rate, &mut rng);
     }
 
+}
+
+pub fn crossover_selection(selection: &Vec::<Chromosome>, crossover_point: u16) -> Vec::<Chromosome> {
+
+    let mut rng = rand::rng();
+
+    let mut cloned_selection: Vec::<&Chromosome> = selection.iter().collect();
+    let mut offspring = Vec::<Chromosome>::new();
+
+    while cloned_selection.len() >= 2 {
+
+        let (mut parent_one_index, mut parent_two_index) = choose_two_parent_indices(&mut rng, &cloned_selection);
+
+        let parent_one = &cloned_selection[parent_one_index];
+        let parent_two = &cloned_selection[parent_two_index];
+        let (child_one, child_two) = crossover_parents(&mut rng, parent_one, parent_two, crossover_point);
+
+        offspring.extend([child_one, child_two]);
+
+        // Ensure higher index parent is removed first.
+        if parent_one_index > parent_two_index {
+            (parent_one_index, parent_two_index) = (parent_two_index, parent_one_index);
+        }
+
+        cloned_selection.remove(parent_two_index);
+        cloned_selection.remove(parent_one_index);
+
+    }
+
+    offspring
+
+}
+
+fn crossover_parents(rng: &mut ThreadRng, parent_one: &Chromosome, parent_two: &Chromosome, crossover_point: u16) -> (Chromosome, Chromosome) {
+    
+    let (parent_one_first_segment, parent_one_second_segment) = parent_one.split_at_time(crossover_point);
+    let (parent_two_first_segment, parent_two_second_segment) = parent_two.split_at_time(crossover_point);
+
+    let mut child_one_genes = parent_one_first_segment;
+    child_one_genes.extend(parent_two_second_segment);
+    let child_one = chromosome::generate_chromosome(child_one_genes);
+
+    let mut child_two_genes = parent_two_first_segment;
+    child_two_genes.extend(parent_one_second_segment);
+    let child_two = chromosome::generate_chromosome(child_two_genes);
+
+    (child_one, child_two)
+
+}
+
+fn choose_two_parent_indices(rng: &mut ThreadRng, parent_pool: &Vec::<&Chromosome>) -> (usize, usize) {
+    let indices: Vec<usize> = (0..parent_pool.len()).collect();
+    let parent_indices: Vec<usize> = indices.choose_multiple(rng, 2).copied().collect();
+    (parent_indices[0], parent_indices[1])
 }
 
 pub fn print_chromosome_pool(chromosome_pool: &Vec::<Chromosome>, melody_duration: u16) {

@@ -19,6 +19,7 @@ const DURATION_SIZE: u16 = 5;
 const ROOT_NOTE_LETTERS: [&str; 12] = ["C", "C♯/D♭", "D", "D♯/E♭", "E", "F", "F♯/G♭", "G", "G♯/A♭", "A", "A♯/B♭", "B"];
 const CHORD_TYPE_NAMES: [&str; 2] = ["Major", "Minor"];
 
+#[derive(Clone)]
 pub struct Gene(u16);
 
 impl Gene {
@@ -100,6 +101,11 @@ impl Gene {
 
         println!("{root_note_letter} {chord_type_name} for {chord_duration} 16th beats.");
     }
+}
+
+// Factory function to construct a gene with given data.
+pub fn generate_gene(root_note: u16, chord_type: u16, duration: u16) -> Gene {
+    Gene((root_note << ROOT_NOTE_SHIFT) + (chord_type << CHORD_TYPE_SHIFT) + (duration - 1 << DURATION_SHIFT))
 }
 
 // Factory function to construct a gene with random data.

@@ -1,8 +1,8 @@
 pub mod gene;
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::rngs::ThreadRng;
 
-use crate::composer::chromosome::gene::Gene;
+use crate::composer::chromosome::gene::{generate_gene, Gene};
 
 pub struct Chromosome(Vec<Gene>);
 
@@ -75,6 +75,40 @@ impl Chromosome {
         }
     }
 
+    pub fn split_at_time(&self, time: u16) -> (Vec<Gene>, Vec<Gene>) {
+        
+        let mut first_segment = Vec::<Gene>::new();
+        let mut second_segment = Vec::<Gene>::new();
+
+        let mut first_segment_duration = 0;
+
+        for gene in &self.0 {
+
+            if first_segment_duration >= time {
+                second_segment.push(gene.clone());
+            }
+
+            // Gene's duration takes segment over the time split, so split the gene.
+            else if first_segment_duration + gene.get_duration() > time {
+                let first_segment_split_gene_duration = time - first_segment_duration;
+                let second_segment_split_gene_duration = gene.get_duration() - first_segment_split_gene_duration;
+                
+                first_segment.push(generate_gene(gene.get_root_note(), gene.get_chord_type(), first_segment_split_gene_duration));
+                second_segment.push(generate_gene(gene.get_root_note(), gene.get_chord_type(), second_segment_split_gene_duration));
+            
+                first_segment_duration = time;
+            }
+
+            else {
+                first_segment.push(gene.clone());
+                first_segment_duration += gene.get_duration();
+            }
+
+        }
+
+        (first_segment, second_segment)
+    }
+
     fn is_valid_chromosome(&self, melody_duration: u16) -> bool {
         let duration: u16 = self.0.iter().map(|gene| gene.get_duration()).sum();
 
@@ -95,6 +129,10 @@ impl Chromosome {
             gene.print();
         }
     }
+}
+
+pub fn generate_chromosome(genes: Vec::<Gene>) -> Chromosome {
+    Chromosome(genes)
 }
 
 // Factory function to construct a chromosome with random genes.
