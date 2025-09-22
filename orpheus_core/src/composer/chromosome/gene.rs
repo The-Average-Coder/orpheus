@@ -1,12 +1,21 @@
 use rand::{Rng, rngs::ThreadRng};
+use num::pow;
+
+// Chord Representation:
+// 4 bits for root note
+// 1 bit for major or minor (maybe 2 bits to also have augmented and diminished)
+// 1 bit for seventh
+// ninth ?
+// sus chords ?
+// 5 bits for duration
 
 const MAX_ROOT_NOTE: u16 = 11;
-const MAX_DURATION: u16 = 64;
+pub const MAX_DURATION: u16 = 32;
 const MAX_CHORD_TYPE: u16 = 1;
 
 const ROOT_NOTE_MASK: u16 = 0b1111_0_00000;
 const ROOT_NOTE_SHIFT: u16 = 6;
-const ROOT_NOTE_SIZE: u16 = 4;
+//const ROOT_NOTE_SIZE: u16 = 4;
 
 const CHORD_TYPE_MASK: u16 = 0b1_00000;
 const CHORD_TYPE_SHIFT: u16 = 5;
@@ -59,9 +68,12 @@ impl Gene {
             return;
         }
 
-
         self.0 &= !DURATION_MASK;
         self.0 |= (duration - 1) << DURATION_SHIFT;
+    }
+
+    pub fn get_chord(&self) -> u16 {
+        ((self.0 & ROOT_NOTE_MASK) + (self.0 & CHORD_TYPE_MASK)) >> CHORD_TYPE_SHIFT
     }
 
     pub fn mutate_chord(&mut self, mutation_rate: f64, rng: &mut ThreadRng) {
@@ -99,7 +111,15 @@ impl Gene {
         let chord_type_name = CHORD_TYPE_NAMES[self.get_chord_type() as usize];
         let chord_duration = self.get_duration();
 
-        println!("{root_note_letter} {chord_type_name} for {chord_duration} 16th beats.");
+        //let notes_in_chord = precomputed_chord_notes::CHORD_NOTES[self.get_chord() as usize];
+        //let notes_in_chord_string = notes_in_chord.iter().map(|n| ROOT_NOTE_LETTERS[*n as usize]).collect::<Vec<_>>().join(", ");
+
+        //let notes_in_chord_scale = precomputed_chord_notes::CHORD_SCALE_NOTES[self.get_chord() as usize];
+        //let notes_in_chord_scale_string = notes_in_chord_scale.iter().map(|n| ROOT_NOTE_LETTERS[*n as usize]).collect::<Vec<_>>().join(", ");
+
+        println!("{root_note_letter} {chord_type_name} for {chord_duration} semiquavers.");
+        //println!("Notes in chord: {notes_in_chord_string}");
+        //println!("Notes in chord scale: {notes_in_chord_scale_string}");
     }
 }
 
@@ -110,5 +130,5 @@ pub fn generate_gene(root_note: u16, chord_type: u16, duration: u16) -> Gene {
 
 // Factory function to construct a gene with random data.
 pub fn generate_random_gene(rng: &mut ThreadRng) -> Gene {
-    Gene((rng.random_range(0..12) << ROOT_NOTE_SHIFT) + rng.random_range(0..64))
+    Gene((rng.random_range(0..12) << ROOT_NOTE_SHIFT) + rng.random_range(0..pow(2, (DURATION_SIZE + CHORD_TYPE_SIZE) as usize)))
 }
